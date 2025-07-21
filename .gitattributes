@@ -1,2 +1,5 @@
 # Ustawienia dla plików tekstowych Unity
 * text=auto eol=lf
+
+*.psd filter=lfs diff=lfs merge=lfs -text
+*.fbx filter=lfs diff=lfs merge=lfs -text
