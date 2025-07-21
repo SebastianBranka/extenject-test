@@ -1,0 +1,71 @@
+name: Native Unity Build 🎮
+on:
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      BUILD_TARGET:
+        description: 'Unity build target platform'
+        default: Android
+        required: false
+        type: string
+
+env:
+  UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+  UNITY_INSTALL_DIR: /opt/unity
+
+jobs:
+  build:
+    name: Building for ${{ inputs.BUILD_TARGET }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          lfs: true
+  
+      - name: cache
+        uses: actions/cache@v3
+        with:
+          path: Library
+          key: Library-${{ inputs.BUILD_TARGET }}
+          restore-keys: Library-
+
+      - name: Install Unity
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install unity
+
+      - name: Native Unity build Simple for ${{ inputs.BUILD_TARGET }}
+        run: /opt/unity/Editor/Unity \
+            -batchmode \
+            -logfile /dev/stdout \
+            -quit \
+            -customBuildName StandaloneWindows64 \
+            -projectPath /github/workspace/. \
+            -buildTarget ${{ inputs.BUILD_TARGET }} \
+            -customBuildTarget ${{ inputs.BUILD_TARGET }} \
+            -customBuildPath /github/workspace/build/StandaloneWindows64/StandaloneWindows64.exe \
+            -executeMethod UnityBuilderAction.Builder.BuildProject \
+            -buildVersion 0.0.521
+
+        # run: ${{ env.UNITY_INSTALL_DIR }}/Editor/Unity \ 
+        #     -batchmode \
+        #     -quit
+        #     -customBuildName win64
+        #     -buildTarget ${{ inputs.BUILD_TARGET }}
+
+    # - name: Unity Build using Game CI
+    #   uses: game-ci/unity-builder@v2.1.2
+    #   env:
+    #     UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+    #   with:
+    #     targetPlatform: ${{ inputs.BUILD_TARGET }}
+    #     allowDirtyBuild: true
+    #     versioning: Semantic
+    #     #unityVersion: ${{ env.UNITY_VERSION }}
+  
+      - uses: actions/upload-artifact@v3
+        with:
+          name: build-StandaloneWindows64
+          path: build/StandaloneWindows64
