@@ -1,10 +1,12 @@
 name: 4. Project Build 🏗️
+
 on:
   workflow_dispatch:
   # push:
-  #   branches:    
+  #   branches:
   #     - main
   #     - 'releases/**'
+
 env:
   UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
   repo: ${{ github.repository }}
@@ -24,35 +26,42 @@ jobs:
     name: Release Package 📦
     needs: Test-Runner
     uses: ./.github/workflows/release.yml
+    secrets: inherit
 
-  Build-Platforms:
-    name: Build ${{ matrix.platform }} ${{ matrix.icon }}
+  Build-WebGL:
+    name: Build WebGL 🕸
     needs: Test-Runner
-    strategy:
-      matrix:
-        include:
-          - platform: WebGL
-            workflow: deploy-to-webgl.yml
-            icon: 🕸
-          - platform: Windows
-            workflow: deploy-to-windows64.yml
-            icon: 🖥️
-          - platform: Android
-            workflow: deploy-to-android.yml
-            icon: 📱
-    uses: ./.github/workflows/${{ matrix.workflow }}
+    if: ${{ contains(matrix.platform, 'WebGL') || !matrix.platform }} # ewentualnie po prostu always run jeśli nie ma matrycy
+    uses: ./.github/workflows/deploy-to-webgl.yml
+    secrets: inherit
+
+  Build-Windows:
+    name: Build Windows 🖥️
+    needs: Test-Runner
+    if: ${{ contains(matrix.platform, 'Windows') || !matrix.platform }}
+    uses: ./.github/workflows/deploy-to-windows64.yml
+    secrets: inherit
+
+  Build-Android:
+    name: Build Android 📱
+    needs: Test-Runner
+    if: ${{ contains(matrix.platform, 'Android') || !matrix.platform }}
+    uses: ./.github/workflows/deploy-to-android.yml
     secrets: inherit
 
   Publish-Github-Page:
     name: Publish Github Page 🚀
-    needs: Build-Platforms
-    if: ${{ contains(needs.Build-Platforms.result, 'WebGL') }}
+    needs:
+      - Build-WebGL
+      - Build-Windows
+      - Build-Android
+    if: ${{ needs.Build-WebGL.result == 'success' }}
     uses: ./.github/workflows/deploy-to-github-web.yml
     secrets: inherit
 
   Send-Notifications:
     name: Send Notifications 📢
-    needs: [Build-Release, Build-Platforms]
+    needs: [Build-Release, Build-WebGL, Build-Windows, Build-Android]
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -60,8 +69,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+
       - name: Send ${{ matrix.platform }} notification
         uses: ./.github/workflows/notify-${{ matrix.platform }}.yml
         with:
-          artifact_url: ${{ needs.Build-Platforms.outputs.artifact_url }}
+          artifact_url: ${{ needs.Build-WebGL.outputs.artifact_url }} # lub inny odpowiedni artifact url
         secrets: inherit
