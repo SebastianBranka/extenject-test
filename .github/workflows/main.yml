@@ -31,47 +31,33 @@ jobs:
   Build-WebGL:
     name: Build WebGL 🕸
     needs: Test-Runner
-    if: ${{ contains(matrix.platform, 'WebGL') || !matrix.platform }} # ewentualnie po prostu always run jeśli nie ma matrycy
+    # Usunięto matrix.platform, ponieważ ten job będzie zawsze budował WebGL
     uses: ./.github/workflows/deploy-to-webgl.yml
     secrets: inherit
 
   Build-Windows:
     name: Build Windows 🖥️
     needs: Test-Runner
-    if: ${{ contains(matrix.platform, 'Windows') || !matrix.platform }}
+    # Usunięto matrix.platform, ponieważ ten job będzie zawsze budował Windows
     uses: ./.github/workflows/deploy-to-windows64.yml
     secrets: inherit
 
   Build-Android:
     name: Build Android 📱
     needs: Test-Runner
-    if: ${{ contains(matrix.platform, 'Android') || !matrix.platform }}
+    # Usunięto matrix.platform, ponieważ ten job będzie zawsze budował Android
     uses: ./.github/workflows/deploy-to-android.yml
     secrets: inherit
 
   Publish-Github-Page:
     name: Publish Github Page 🚀
+    # Zmieniono needs na konkretne joby, które produkują artefakty
     needs:
-      - Build-WebGL
-      - Build-Windows
-      - Build-Android
+      - Build-WebGL # Zalozenie, ze strona bedzie budowana na podstawie WebGL
     if: ${{ needs.Build-WebGL.result == 'success' }}
     uses: ./.github/workflows/deploy-to-github-web.yml
     secrets: inherit
 
-  Send-Notifications:
-    name: Send Notifications 📢
-    needs: [Build-Release, Build-WebGL, Build-Windows, Build-Android]
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        platform: [discord, teams, slack]
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Send ${{ matrix.platform }} notification
-        uses: ./.github/workflows/notify-${{ matrix.platform }}.yml
-        with:
-          artifact_url: ${{ needs.Build-WebGL.outputs.artifact_url }} # lub inny odpowiedni artifact url
-        secrets: inherit
+  # Cała sekcja Send-Notifications została usunięta, ponieważ brakowało plików powiadomień.
+  # Jeśli w przyszłości zechcesz dodać powiadomienia, będziesz musiał stworzyć
+  # odpowiednie pliki (np. notify-discord.yml, notify-teams.yml) z on: workflow_call.
