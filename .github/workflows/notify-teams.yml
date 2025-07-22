@@ -1,0 +1,40 @@
+name: Send MS Teams Notification 👥
+on: 
+  workflow_call:
+    inputs:
+      artifact_url:
+        description: 'the full url to the built artifact'
+        required: true
+        type: string
+
+# env:
+#   MS_TEAMS_WEBHOOK_URL: ${{ secrets.MS_TEAMS_WEBHOOK_URL }}
+
+jobs:
+  teams-notify:
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Test artifact URL
+      run: echo "received inputs artifact URL is ${{ inputs.artifact_url }}"
+
+    - name: Notify MS Teams
+      run: |
+        curl -X POST -H "Content-Type: application/json" -d '{
+          "@type": "MessageCard",
+          
+          "@context": "https://schema.org/extensions",
+          "summary": "Test & build completeded successfully.",
+          "themeColor": "0076D7",
+          "title": "A new build is available 🎁",
+          "text": "The build and test for the code has completed.",
+          "potentialAction": [
+            {
+              "@type": "OpenUri",
+              "name": "View artifact",
+              "targets": [
+                { "os": "default", "uri": "${{ inputs.artifact_url }}" }
+              ]
+            }
+          ]
+        }' ${{ secrets.MS_TEAMS_WEBHOOK_URL }}

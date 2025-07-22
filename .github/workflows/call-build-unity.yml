@@ -1,0 +1,40 @@
+name: Call build unity 📞
+on: 
+  workflow_dispatch:
+  # push:
+  #   branches:    
+  #     - main     
+
+env:
+    UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+
+jobs:
+  buildForAllSupportedPlatforms:
+    name: Build for ${{ matrix.targetPlatform }}
+    runs-on: ubuntu-latest
+    outputs:
+      target: ${{ steps.step1.outputs.target }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        targetPlatform:
+          # - StandaloneOSX # Build a macOS standalone (Intel 64-bit).
+          # - StandaloneWindows # Build a Windows standalone.
+            - StandaloneWindows64 # Build a Windows 64-bit standalone.
+          # - StandaloneLinux64 # Build a Linux 64-bit standalone.
+          # - iOS # Build an iOS player.
+          # - WebGL # WebGL.
+          #  - Android # Build an Android .apk standalone app.
+    steps:
+      - name: set target
+        id: step1
+        run: echo "target=${{ matrix.targetPlatform }}" >> $GITHUB_OUTPUT
+
+  callBuilder:  
+    needs: buildForAllSupportedPlatforms
+    name: call build for ${{ needs.buildForAllSupportedPlatforms.outputs.target }} 🎮
+    uses: ./.github/workflows/build-game-ci.yml
+    secrets: inherit
+    with:
+        BUILD_TARGET: ${{ needs.buildForAllSupportedPlatforms.outputs.target }}
